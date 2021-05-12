@@ -1,22 +1,9 @@
 const path = require('path')
 const fs = require('fs')
 const fsExtra = require('fs-extra')
-const readline = require('readline')
 const archiver = require('archiver')
 const { exec } = require('pkg')
 const puppeteer = require('puppeteer')
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-})
-
-// When creating a readline.Interface using stdin as input, the program will not terminate until it
-// receives EOF (Ctrl+D on Linux/macOS, Ctrl+Z followed by Return on Windows). If you want your
-// application to exit without waiting for user input, you can unref the standard input stream.
-// Reference: https://nodejs.org/api/readline.html#readline_readline
-
-process.stdin.unref()
 
 const appName = 'asciidoctor-web-pdf'
 const buildDir = 'build'
@@ -41,20 +28,41 @@ async function createPackage (platforms) {
 }
 
 async function getBrowsers (platforms) {
-  await Promise.all(Object.entries(platforms).map(async ([name, platform], index) => {
+  console.log('========')
+  console.log('0\n1\n2')
+  console.log('========')
+  console.log('\x1B[6A' + '')
+
+  return Promise.all(Object.entries(platforms).map(async ([name, platform], index) => {
     const puppeteerPlatform = platform.puppeteerPlatform || name
-    await puppeteer
+    return puppeteer
       .createBrowserFetcher({
         platform: puppeteerPlatform, // one of: linux, mac, win32 or win64
         path: path.resolve(path.join(buildDirPath, name, 'chromium'))
       })
       .download(puppeteer._preferredRevision, function (downloadBytes, totalBytes) {
-        readline.cursorTo(process.stdout, 0)
         const percent = Math.round(downloadBytes / totalBytes * 100)
-        rl.write(`Downloading browser for ${name.padEnd(5)} ${percent.toString().padStart(5)}%`)
+        const status = `Downloading browser for ${name.padEnd(5)} ${percent.toString().padStart(5)}%`
+        if (name === 'linux') {
+          // pre: we are at line 0
+          // mac output shall be in line 1
+          // post: we are at line 0
+          console.log('\x1B[3B\x1B[K' + status + '\x1B[4A' + '')
+        }
+        if (name === 'mac') {
+          // pre: we are at line 0
+          // mac output shall be in line 1
+          // post: we are at line 0
+          console.log('\x1B[1B\x1B[K' + status + '\x1B[2A' + '')
+        }
+        if (name === 'win') {
+          // pre: we are at line 0
+          // win output shall be in line 2
+          // post: we are at line 0
+          console.log('\x1B[2B\x1B[K' + status + '\x1B[3A' + '')
+        }
       })
   }))
-  console.log('\nBrowsers are downloaded/available')
 }
 
 function copyAssets (platforms) {
@@ -116,6 +124,8 @@ async function main (platforms) {
 
   // get browser
   await getBrowsers(platforms)
+  console.log('\nBrowsers are downloaded/available')
+
 
   // using pkg create the binary for asciidoctor-web-pdf
   await createPackage(platforms)
