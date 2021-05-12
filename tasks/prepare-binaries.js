@@ -126,7 +126,6 @@ async function main (platforms) {
   await getBrowsers(platforms)
   console.log('\nBrowsers are downloaded/available')
 
-
   // using pkg create the binary for asciidoctor-web-pdf
   await createPackage(platforms)
 
