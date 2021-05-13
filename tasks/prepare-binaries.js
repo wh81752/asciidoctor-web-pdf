@@ -28,10 +28,11 @@ async function createPackage (platforms) {
 }
 
 async function getBrowsers (platforms) {
-  console.log('========')
+  console.log('='.padEnd(36, '='))
   console.log('0\n1\n2')
-  console.log('========')
-  console.log('\x1B[6A' + '')
+  console.log('='.padEnd(36, '='))
+  // PRE and POST condition:
+  // TTY cursor is at start of line after second '======='
 
   return Promise.all(Object.entries(platforms).map(async ([name, platform], index) => {
     const puppeteerPlatform = platform.puppeteerPlatform || name
@@ -43,23 +44,17 @@ async function getBrowsers (platforms) {
       .download(puppeteer._preferredRevision, function (downloadBytes, totalBytes) {
         const percent = Math.round(downloadBytes / totalBytes * 100)
         const status = `Downloading browser for ${name.padEnd(5)} ${percent.toString().padStart(5)}%`
-        if (name === 'linux') {
-          // pre: we are at line 0
-          // mac output shall be in line 1
-          // post: we are at line 0
-          console.log('\x1B[3B\x1B[K' + status + '\x1B[4A' + '')
-        }
         if (name === 'mac') {
-          // pre: we are at line 0
-          // mac output shall be in line 1
-          // post: we are at line 0
-          console.log('\x1B[1B\x1B[K' + status + '\x1B[2A' + '')
+          // mac at line (0) => 2up, clear, status (incl NL), 1down
+          console.log('\x1B[4A\x1B[K' + status + '\x1B[3B' + '')
         }
         if (name === 'win') {
-          // pre: we are at line 0
-          // win output shall be in line 2
-          // post: we are at line 0
-          console.log('\x1B[2B\x1B[K' + status + '\x1B[3A' + '')
+          // win at line (1) => 3up, clear, status (incl NL), 2down
+          console.log('\x1B[3A\x1B[K' + status + '\x1B[2B' + '')
+        }
+        // linux at line (2) => 2up, clear, status (incl NL), 1down
+        if (name === 'linux') {
+          console.log('\x1B[2A\x1B[K' + status + '\x1B[1B' + '')
         }
       })
   }))
