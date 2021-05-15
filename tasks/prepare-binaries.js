@@ -28,12 +28,8 @@ async function createPackage (platforms) {
 }
 
 async function getBrowsers (platforms) {
-  console.log('='.padEnd(36, '='))
-  console.log('0\n1\n2')
-  console.log('='.padEnd(36, '='))
-  // PRE and POST condition:
-  // TTY cursor is at start of line after second '======='
-
+  console.log('\n')
+  const downloadProgress = Object.assign({}, ...Object.keys(platforms).map((key) => ({ [key]: 0 })))
   return Promise.all(Object.entries(platforms).map(async ([name, platform], index) => {
     const puppeteerPlatform = platform.puppeteerPlatform || name
     return puppeteer
@@ -42,20 +38,10 @@ async function getBrowsers (platforms) {
         path: path.resolve(path.join(buildDirPath, name, 'chromium'))
       })
       .download(puppeteer._preferredRevision, function (downloadBytes, totalBytes) {
-        const percent = Math.round(downloadBytes / totalBytes * 100)
-        const status = `Downloading browser for ${name.padEnd(5)} ${percent.toString().padStart(5)}%`
-        if (name === 'mac') {
-          // mac at line (0) => 2up, clear, status (incl NL), 1down
-          console.log('\x1B[4A\x1B[K' + status + '\x1B[3B' + '')
-        }
-        if (name === 'win') {
-          // win at line (1) => 3up, clear, status (incl NL), 2down
-          console.log('\x1B[3A\x1B[K' + status + '\x1B[2B' + '')
-        }
-        // linux at line (2) => 2up, clear, status (incl NL), 1down
-        if (name === 'linux') {
-          console.log('\x1B[2A\x1B[K' + status + '\x1B[1B' + '')
-        }
+        downloadProgress[name] = Math.round(downloadBytes / totalBytes * 100)
+        const entries = Object.entries(downloadProgress)
+        const status = `Downloading ${entries.length > 1 ? 'browsers' : 'browser'} [${entries.map(([name, percent]) => `${name}: ${percent.toString().padStart(2)}%`).join(', ')}]`
+        console.log('\x1B[1A\x1B[K' + status)
       })
   }))
 }
